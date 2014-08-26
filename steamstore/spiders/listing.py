@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import scrapy
 import re
-from steamstore.items import Game
+from steamstore.items import ListingItem
 
 
 class ListingSpider(scrapy.Spider):
@@ -18,18 +18,18 @@ class ListingSpider(scrapy.Spider):
         url_pattern = re.compile(r'/?\?.*$')
 
         for sel in response.xpath('//div[@id="search_result_container"]/div[6]/a'):
-            game = Game()
-            game['name'] = get_first(sel.xpath('div[@class="col search_name ellipsis"]/h4/text()').extract())
-            game['price'] = get_first(sel.xpath('div[@class="col search_price"]/text()').extract())
-            game['url'] = url_pattern.sub('', get_first(sel.xpath('@href').extract()))
-            yield game
+            item = ListingItem()
+            item['name'] = get_first(sel.xpath('div[@class="col search_name ellipsis"]/h4/text()').extract())
+            item['price'] = get_first(sel.xpath('div[@class="col search_price"]/text()').extract())
+            item['url'] = url_pattern.sub('', get_first(sel.xpath('@href').extract()))
+            yield item
 
-            #yield scrapy.Request(game['url'], callback=self.parse_game_page)
+            #yield scrapy.Request(item['url'], callback=self.parse_item_page)
 
         for sel in response.xpath('//*[@id="search_result_container"]/div[4]/div[@class="search_pagination_right"]/a/@href'):
             yield scrapy.Request(sel.extract())
 
 
-    def parse_game_page(self, response):
+    def parse_item_page(self, response):
 
         print response

@@ -8,7 +8,7 @@
 import scrapy
 
 
-class Game(scrapy.Item):
+class ListingItem(scrapy.Item):
     name = scrapy.Field()
     price = scrapy.Field()
     url = scrapy.Field()
