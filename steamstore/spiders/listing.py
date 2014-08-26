@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 import scrapy
 import re
+
+from functools import partial
+from scrapy import log
 from steamstore.items import ListingItem
 
 
@@ -18,6 +21,17 @@ class ListingSpider(scrapy.Spider):
 
 
     def parse(self, response):
+        "Generate data and requests walking through each item in each search page"
+
+        for item in self._parse_items(response):
+            yield item
+
+        for page_request in self._parse_search_pages(response):
+            yield page_request
+
+
+    def _parse_items(self, response):
+        "Generate item data and requests for each item page"
 
         for sel in response.xpath('//div[@id="search_result_container"]/div[6]/a'):
             item = ListingItem()
@@ -27,12 +41,23 @@ class ListingSpider(scrapy.Spider):
             item['url'] = self.url_pattern.sub('', self.get_first(sel.xpath('@href').extract()))
             yield item
 
-            #yield scrapy.Request(item['url'], callback=self.parse_item_page)
+            parse_item_function = ListingSpider.__dict__.get('parse_{}'.format(item['type']))
+            if parse_item_function:
+                yield scrapy.Request(item['url'], callback=partial(parse_item_function, self))
+            else:
+                self.log('No method for handling type "{}", skipping'.format(item['type']), level=log.WARNING)
+
+
+    def _parse_search_pages(self, response):
+        "Generate requests for each search page"
 
         for sel in response.xpath('//*[@id="search_result_container"]/div[4]/div[@class="search_pagination_right"]/a/@href'):
             yield scrapy.Request(sel.extract())
 
 
-    def parse_item_page(self, response):
+    #def parse_vid(self, response):
+    #    print response
 
-        print response
+
+    #def parse_app(self, response):
+    #    print response
