@@ -16,10 +16,12 @@ class ListingSpider(scrapy.Spider):
         get_first = lambda l: l[0] if l else None
 
         url_pattern = re.compile(r'/?\?.*$')
+        type_icon_pattern = re.compile(r'^.*/ico_type_(\w+).gif')
 
         for sel in response.xpath('//div[@id="search_result_container"]/div[6]/a'):
             item = ListingItem()
             item['name'] = get_first(sel.xpath('div[@class="col search_name ellipsis"]/h4/text()').extract())
+            item['type'] = type_icon_pattern.sub(r'\1', get_first(sel.xpath('div[@class="col search_type"]/img/@src').extract()))
             item['price'] = get_first(sel.xpath('div[@class="col search_price"]/text()').extract())
             item['url'] = url_pattern.sub('', get_first(sel.xpath('@href').extract()))
             yield item

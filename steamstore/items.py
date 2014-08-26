@@ -10,5 +10,6 @@ import scrapy
 
 class ListingItem(scrapy.Item):
     name = scrapy.Field()
+    type = scrapy.Field()
     price = scrapy.Field()
     url = scrapy.Field()
