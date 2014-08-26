@@ -13,5 +13,10 @@ BOT_NAME = 'steamstore'
 SPIDER_MODULES = ['steamstore.spiders']
 NEWSPIDER_MODULE = 'steamstore.spiders'
 
+ROBOTSTXT_OBEY = True
+
+LOG_ENABLED = True
+LOG_FILE = 'steamstore.log'
+
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 #USER_AGENT = 'steamstore (+http://www.yourdomain.com)'
