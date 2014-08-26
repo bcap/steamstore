@@ -8,7 +8,7 @@ class ListingSpider(scrapy.Spider):
     name = "listing"
     allowed_domains = ["store.steampowered.com"]
     start_urls = (
-        'http://store.steampowered.com/search/?sort_by=Released&sort_order=DESC',
+        'http://store.steampowered.com/search/?sort_by=Name&sort_order=ASC',
     )
 
     def parse(self, response):
