@@ -18,8 +18,6 @@ class ListingSpider(scrapy.Spider):
     type_icon_pattern = re.compile(r'^.*/ico_type_(\w+).gif')
     acceptance_pattern = re.compile(r'(\d+) of (\d+) people')
 
-    get_first = lambda self, l: l[0] if l else None
-
 
     def parse(self, response):
         "Generate data and requests walking through each item in each search page"
@@ -36,10 +34,10 @@ class ListingSpider(scrapy.Spider):
 
         for sel in response.xpath('//div[@id="search_result_container"]/div[6]/a'):
             item = ListingItem()
-            item['name'] = self.get_first(sel.xpath('div[@class="col search_name ellipsis"]/h4/text()').extract())
-            item['type'] = self.type_icon_pattern.sub(r'\1', self.get_first(sel.xpath('div[@class="col search_type"]/img/@src').extract()))
-            item['price'] = self.get_first(sel.xpath('div[@class="col search_price"]/text()').extract())
-            item['url'] = self.url_pattern.sub('', self.get_first(sel.xpath('@href').extract()))
+            item['name'] = self._extract(sel, 'div[@class="col search_name ellipsis"]/h4/text()')
+            item['type'] = self.type_icon_pattern.sub(r'\1', self._extract(sel, 'div[@class="col search_type"]/img/@src'))
+            item['price'] = self._extract(sel, 'div[@class="col search_price"]/text()')
+            item['url'] = self.url_pattern.sub('', self._extract(sel, '@href'))
             item['id'] = item['url'][item['url'].rindex('/') + 1 :]
 
             parse_item_function = ListingSpider.__dict__.get('parse_{}'.format(item['type']))
@@ -59,7 +57,7 @@ class ListingSpider(scrapy.Spider):
 
     def parse_app(self, response):
         app = response.meta['item']
-        reviews_url = self.get_first(response.xpath('//*[@id="ViewAllReviewsall"]/a/@href').extract())
+        reviews_url = self._extract(response, '//*[@id="ViewAllReviewsall"]/a/@href')
         if reviews_url:
             app['reviews_url'] = self.url_pattern.sub('', reviews_url)
             yield self._review_page_request(app, 1, 0)
@@ -78,9 +76,9 @@ class ListingSpider(scrapy.Spider):
         processed_reviews = 0
 
         for sel in response.xpath('//div[@class="apphub_UserReviewCardContent"]'):
-            content = self.get_first(sel.xpath('div[@class="apphub_CardTextContent"]/text()').extract())
-            recommendation = self.get_first(sel.xpath('//div[@class="reviewInfo"]/div[@class="title"]/text()').extract())
-            acceptance = self.get_first(sel.xpath('div[@class="found_helpful"]/text()').extract())
+            content = self._extract(sel, 'div[@class="apphub_CardTextContent"]/text()')
+            recommendation = self._extract(sel, '//div[@class="reviewInfo"]/div[@class="title"]/text()')
+            acceptance = self._extract(sel, 'div[@class="found_helpful"]/text()')
 
             review = dict()
             review['content'] = content.strip() if content else None
@@ -113,3 +111,16 @@ class ListingSpider(scrapy.Spider):
         template = 'http://steamcommunity.com/app/{}/homecontent/?userreviewsoffset={}&p={}&appHubSubSection=10&browsefilter=toprated'
         url = template.format(app['id'], offset, page)
         return scrapy.Request(url, callback=self.parse_reviews, meta={'app': app, 'page': page, 'offset': offset})
+
+
+    def _extract(self, selector, xpath):
+        data = selector.xpath(xpath).extract()
+
+        if type(data) not in (unicode, str) and len(data) > 0:
+            data = data[0]
+
+        if type(data) in (unicode, str):
+            data = data.strip()
+
+        return data
+
