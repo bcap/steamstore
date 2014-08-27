@@ -92,8 +92,8 @@ class ListingSpider(scrapy.Spider):
         if processed_reviews > 0:
             yield self._review_page_request(app, page + 1, offset + processed_reviews)
 
+        # no more reviews found, now we are done
         else:
-            import ipdb; ipdb.set_trace()
             yield app
 
 
