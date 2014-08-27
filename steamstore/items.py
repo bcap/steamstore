@@ -9,7 +9,10 @@ import scrapy
 
 
 class ListingItem(scrapy.Item):
+    id = scrapy.Field()
     name = scrapy.Field()
     type = scrapy.Field()
     price = scrapy.Field()
     url = scrapy.Field()
+    reviews_url = scrapy.Field()
+    reviews = scrapy.Field()
