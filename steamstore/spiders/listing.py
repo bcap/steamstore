@@ -35,6 +35,7 @@ class ListingSpider(scrapy.Spider):
         for sel in response.xpath('//div[@id="search_result_container"]/div[6]/a'):
             item = ListingItem()
             item['name'] = self._extract(sel, 'div[@class="col search_name ellipsis"]/h4/text()')
+            self.log(u'Parsing data for item named "{}"'.format(item['name']), level=log.INFO)
             item['type'] = self.type_icon_pattern.sub(r'\1', self._extract(sel, 'div[@class="col search_type"]/img/@src'))
             item['price'] = self._extract(sel, 'div[@class="col search_price"]/text()')
             item['url'] = self.url_pattern.sub('', self._extract(sel, '@href'))
