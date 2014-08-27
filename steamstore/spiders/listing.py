@@ -62,40 +62,54 @@ class ListingSpider(scrapy.Spider):
         reviews_url = self.get_first(response.xpath('//*[@id="ViewAllReviewsall"]/a/@href').extract())
         if reviews_url:
             app['reviews_url'] = self.url_pattern.sub('', reviews_url)
-            yield scrapy.Request(self._review_page_url(app, 1, 0), callback=self.parse_reviews, meta={'app': app})
+            yield self._review_page_request(app, 1, 0)
         else:
             yield app
 
 
-    def _review_page_url(self, app, page, offset):
-        template = 'http://steamcommunity.com/app/{}/homecontent/?userreviewsoffset={}&p={}&appHubSubSection=10&browsefilter=toprated'
-        return template.format(app['id'], offset, page)
-
-
     def parse_reviews(self, response):
         app = response.meta['app']
-        app['reviews'] = list()
+        page = response.meta['page']
+        offset = response.meta['offset']
+
+        if not 'reviews' in app:
+            app['reviews'] = list()
+
+        processed_reviews = 0
 
         for sel in response.xpath('//div[@class="apphub_UserReviewCardContent"]'):
-
             content = self.get_first(sel.xpath('div[@class="apphub_CardTextContent"]/text()').extract())
             recommendation = self.get_first(sel.xpath('//div[@class="reviewInfo"]/div[@class="title"]/text()').extract())
             acceptance = self.get_first(sel.xpath('div[@class="found_helpful"]/text()').extract())
 
             review = dict()
-
             review['content'] = content.strip() if content else None
             review['recommendation'] = recommendation.strip() if recommendation else None
             review['acceptance'] = acceptance.strip() if acceptance else None
-
-            match = self.acceptance_pattern.match(review['acceptance'])
-            if match:
-                review['acceptance_score'] = (int(match.group(1)), int(match.group(2)))
-            elif review['acceptance'].index('1 person') > 0:
-                review['acceptance_score'] = (1, 1)
-            else:
-                review['acceptance_score'] = (0, 0)
-
+            review['acceptance_score'] = self._extract_acceptance_score(review['acceptance'])
             app['reviews'].append(review)
 
-        yield app
+            processed_reviews = processed_reviews + 1
+
+        if processed_reviews > 0:
+            yield self._review_page_request(app, page + 1, offset + processed_reviews)
+
+        else:
+            import ipdb; ipdb.set_trace()
+            yield app
+
+
+    def _extract_acceptance_score(self, acceptance_string):
+        match = self.acceptance_pattern.match(acceptance_string)
+        if match:
+            return (int(match.group(1)), int(match.group(2)))
+        elif acceptance_string.startswith('1 person'):
+            return (1, 1)
+        else:
+            return (0, 0)
+
+
+    def _review_page_request(self, app, page, offset):
+        template = 'http://steamcommunity.com/app/{}/homecontent/?userreviewsoffset={}&p={}&appHubSubSection=10&browsefilter=toprated'
+        url = template.format(app['id'], offset, page)
+        return scrapy.Request(url, callback=self.parse_reviews, meta={'app': app, 'page': page, 'offset': offset})
