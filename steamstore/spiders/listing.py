@@ -120,12 +120,4 @@ class ListingSpider(scrapy.Spider):
 
     def _extract(self, selector, xpath):
         data = selector.xpath(xpath).extract()
-
-        if type(data) not in (unicode, str) and len(data) > 0:
-            data = data[0]
-
-        if type(data) in (unicode, str):
-            data = data.strip()
-
-        return data
-
+        return data[0].strip() if data else None
