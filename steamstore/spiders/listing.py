@@ -80,6 +80,7 @@ class ListingSpider(scrapy.Spider):
             app['reviews'] = list()
 
         processed_reviews = 0
+        reached_useless_reviews = False
 
         for sel in response.xpath('//div[@class="apphub_UserReviewCardContent"]'):
             content = self._extract(sel, 'div[@class="apphub_CardTextContent"]/text()')
@@ -91,11 +92,18 @@ class ListingSpider(scrapy.Spider):
             review['recommendation'] = recommendation.strip() if recommendation else None
             review['acceptance'] = acceptance.strip() if acceptance else None
             review['acceptance_score'] = self._extract_acceptance_score(review['acceptance'])
+
+            if review['acceptance_score'][0] == 0:
+                reached_useless_reviews = True
+                self.log(u'found a review with 0 acceptance, ending review crawling for "{}" after {} reviews'.format(app['name'], len(app['reviews'])), level=log.INFO)
+                break
+
             app['reviews'].append(review)
 
             processed_reviews = processed_reviews + 1
 
-        if processed_reviews > 0:
+
+        if processed_reviews > 0 and not reached_useless_reviews:
             yield self._review_page_request(app, page + 1, offset + processed_reviews)
 
         # no more reviews found, now we are done
