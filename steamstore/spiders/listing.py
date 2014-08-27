@@ -57,10 +57,12 @@ class ListingSpider(scrapy.Spider):
 
     def parse_app(self, response):
         app = response.meta['item']
-        reviews_url = self._extract(response, '//*[@id="ViewAllReviewsall"]/a/@href')
 
+        app['developer'] = self._extract(response, '//div[@class="details_block"]/b[text()="Developer:"]/following-sibling::a[1]/text()')
+        app['publisher'] = self._extract(response, '//div[@class="details_block"]/b[text()="Publisher:"]/following-sibling::a[1]/text()')
         app['tags'] = map(unicode.strip, response.xpath('//div[@id="game_highlights"]//div[@class="glance_tags popular_tags"]/a/text()').extract())
 
+        reviews_url = self._extract(response, '//*[@id="ViewAllReviewsall"]/a/@href')
         if reviews_url:
             app['reviews_url'] = self.url_pattern.sub('', reviews_url)
             yield self._review_page_request(app, 1, 0)
