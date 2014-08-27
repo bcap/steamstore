@@ -16,3 +16,4 @@ class ListingItem(scrapy.Item):
     url = scrapy.Field()
     reviews_url = scrapy.Field()
     reviews = scrapy.Field()
+    tags = scrapy.Field()
